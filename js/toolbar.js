@@ -12,6 +12,7 @@ var curr_selected_text = '';
 var auto_repeat = false
 var repeat_action = null
 arr_cummulated_text = []
+var answers = []
 
 function refresh_view(exceptions) {
     redraw_graph();
@@ -52,7 +53,7 @@ function getQuiz(exceptions = null) {
 
 
         var question_hierarchy = redraw_graph(false) // just get hierarchy does not display anything
-        var answers = question_hierarchy.leaves();
+        answers = question_hierarchy.leaves();
         // make html divs from leaves
 
         //          when div clicked: if div data parent id matches with hierarchy id remove div and add it to hierarchy
@@ -62,28 +63,11 @@ function getQuiz(exceptions = null) {
 
         // create a pan and insert answers into it
         d3.select("#quiz_choices").remove()
-        const quiz = d3.select("#text-column")
+        d3.select("#text-column")
             .append("div")
             .attr("id", "quiz_choices")
-            .selectAll("div")
-            .data(answers)
-            .join("div")
-            .filter(d => !exceptions.includes(d.data.id))
-            .attr("id", d => `answer_${d.data.id}`)
-            .attr("class", "answer")
-            .text(d => d.data.name)
-            .on("click", function(d) {
-                if (d.parent.data.id == graph_data.getActiveNode().id) {
-                    solve_node(d, this);
-                } else {
-
-                }
-
-            })
-            .on("dblclick", function(d) {
-                solve_node(d, this);
-                drawer.hilightNode(d.data.id)
-            });
+        answers = remove_exceptions(answers, exceptions);
+        updateAnswerNodes();
         $("#shuffle-quiz").on("click", function() {
             var parent = $("#quiz_choices");
             var divs = parent.children();
@@ -98,32 +82,6 @@ function getQuiz(exceptions = null) {
         d3.select("#quiz_choices").remove()
     }
 
-    function solve_node(d, node) {
-        parent_childs = d.parent.children;
-        if (parent_childs == null) {
-            if (d.parent._children == null) {
-                d.parent.children = new Array;
-                parent_childs = d.parent.children;
-            } else {
-                parent_childs = d.parent._children;
-            }
-        }
-        parent_childs.push(d);
-
-        function unmark_parent(node) {
-            if (node.parent) {
-                node.parent.questions -= 1;
-                if (node.parent.questions == 0)
-                    unmark_parent(d.parent);
-            }
-        }
-        if (d.parent.questions)
-            unmark_parent(d);
-        d.parent._children = parent_childs;
-        d3.select(node).node().remove();
-        drawer.refresh();
-        pycmd("sub_answer_" + d.data.id);
-    }
 }
 
 
@@ -180,6 +138,67 @@ viewBoxSlider.oninput = function() {
     drawer.changeZoom(this.value);
 }
 
+
+function remove_exceptions(answers, exceptions) {
+    return answers.filter(function(item) {
+        return !exceptions.includes(item.data.id);
+    });
+}
+
+function updateAnswerNodes() {
+    function solve_node(d) {
+        parent_childs = d.parent.children;
+        if (parent_childs == null) {
+            if (d.parent._children == null) {
+                d.parent.children = new Array;
+                parent_childs = d.parent.children;
+            } else {
+                parent_childs = d.parent._children;
+            }
+        }
+        parent_childs.push(d);
+
+        function unmark_parent(node) {
+            if (node.parent) {
+                node.parent.questions -= 1;
+                if (node.parent.questions == 0)
+                    unmark_parent(d.parent);
+            }
+        }
+        if (d.parent.questions)
+            unmark_parent(d);
+        d.parent._children = parent_childs;
+        //d3.select(node).node().remove();
+        answers = remove_exceptions(answers, [d.data.id])
+        updateAnswerNodes()
+        drawer.redraw();
+        pycmd("sub_answer_" + d.data.id);
+    }
+
+    d3.select("#quiz_choices")
+        .selectAll("div")
+        .data(answers)
+        .join("div")
+        //.filter(d => !exceptions.includes(d.data.id))
+        .attr("id", d => `answer_${d.data.id}`)
+        .attr("class", "answer")
+        .text(d => d.data.name)
+        .on("click", function(d) {
+            if (d.parent.data.id == graph_data.getActiveNode().id) {
+                solve_node(d);
+            } else {}
+        })
+        .on("dblclick", function(d) {
+
+            parents = answers.filter((nd) => {
+                return nd.data.id == d.parent.data.id
+            })
+            if (parents.length == 0) {
+                solve_node(d);
+                drawer.hilightNode(d.data.id);
+            }
+        });
+}
 
 function remove_leaves(hierarchy, exceptions = null, markParent = true) {
     function isException(node) {

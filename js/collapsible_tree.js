@@ -26,6 +26,9 @@ var chart_tree = {
             this.width * this.zoom, this.height * this.zoom
         ]
     },
+    redraw() {
+        this.draw(this.data)
+    },
     draw(root) {
         _this = this
         this.tree = d3.tree().nodeSize([this.dx, this.dy * this.radius])
@@ -33,7 +36,8 @@ var chart_tree = {
         root.x0 = this.dy / 2;
         root.y0 = 0;
         root.descendants().forEach((d, i) => {
-            if (!d.id) d.id = i;
+            //if (!d.id) 
+            d.id = i;
             if (d.children != null) d._children = d.children;
             // if (d.depth && d.data.name.length !== 7) d.children = null;
         });
@@ -106,9 +110,26 @@ var chart_tree = {
                 .on("mouseover", function(d) { tip.show(d); })
                 .on('mouseout', function(d) { tip.hide(d); })
                 .on("dblclick", d => {
-                    d.children = d.children ? null : d._children;
-                    tip.hide(d);
-                    this.update(d);
+                    if (d._children) {
+                        d.children = d.children ? null : d._children;
+                        tip.hide(d);
+                        this.update(d);
+                    } else if (d.depth != 0) {
+                        tip.hide(d);
+
+                        this.hilightNode(d.parent.data.id)
+                        answers.push(d)
+                        remove_leaves(this.data, nd => nd.data.id == d.data.id ? false : true, true)
+                        this.redraw()
+                        updateAnswerNodes()
+                        delete d.x
+                        delete d.y
+                        delete d.x0
+                        delete d.y0
+                        delete d.id
+
+                    }
+
                 });
 
             nodeEnter.append("circle")
