@@ -46,7 +46,8 @@ var chart_tree = {
             .call(d3.zoom().on("zoom", function() {
                 chart_tree.transform_attr = d3.zoomTransform(this);
                 svg.select("g").attr("transform", chart_tree.transform_attr)
-            }));
+            }))
+            .on("dblclick.zoom", null);
         var g = svg.select("g")
         g.selectAll("g").remove()
         const gLink = g.append("g")
@@ -104,7 +105,7 @@ var chart_tree = {
                 .attr("stroke-opacity", show_transition ? 0 : 1)
                 .on("mouseover", function(d) { tip.show(d); })
                 .on('mouseout', function(d) { tip.hide(d); })
-                .on("click", d => {
+                .on("dblclick", d => {
                     d.children = d.children ? null : d._children;
                     tip.hide(d);
                     this.update(d);
