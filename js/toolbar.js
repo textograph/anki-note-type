@@ -72,44 +72,57 @@ function getQuiz(exceptions = null) {
             .attr("id", d => `answer_${d.data.id}`)
             .attr("class", "answer")
             .text(d => d.data.name)
-            .on("click", function(d, i) {
+            .on("click", function(d) {
                 if (d.parent.data.id == graph_data.getActiveNode().id) {
-                    parent_childs = d.parent.children
-                    if (parent_childs == null) {
-                        if (d.parent._children == null) {
-                            d.parent.children = new Array
-                            parent_childs = d.parent.children
-                        } else {
-                            parent_childs = d.parent._children
-                        }
-                    }
-                    parent_childs.push(d)
-
-                    function unmark_parent(node) {
-                        if (node.parent) {
-                            node.parent.questions -= 1
-                            if (node.parent.questions == 0)
-                                unmark_parent(d.parent)
-                        }
-                    }
-
-                    if (d.parent.questions)
-                        unmark_parent(d)
-
-                    d.parent._children = parent_childs
-                    d3.select(this).node().remove()
-                    drawer.refresh();
-                    pycmd("sub_answer_" + d.data.id)
+                    solve_node(d, this);
                 } else {
 
                 }
 
+            })
+            .on("dblclick", function(d) {
+                solve_node(d, this);
+                drawer.hilightNode(d.data.id)
             });
+        $("#shuffle-quiz").on("click", function() {
+            var parent = $("#quiz_choices");
+            var divs = parent.children();
+            while (divs.length) {
+                parent.append(divs.splice(Math.floor(Math.random() * divs.length), 1)[0]);
+            }
+        })
     } else {
         delete graph_data
         graph_data = graph_data_copy
         redraw_graph()
         d3.select("#quiz_choices").remove()
+    }
+
+    function solve_node(d, node) {
+        parent_childs = d.parent.children;
+        if (parent_childs == null) {
+            if (d.parent._children == null) {
+                d.parent.children = new Array;
+                parent_childs = d.parent.children;
+            } else {
+                parent_childs = d.parent._children;
+            }
+        }
+        parent_childs.push(d);
+
+        function unmark_parent(node) {
+            if (node.parent) {
+                node.parent.questions -= 1;
+                if (node.parent.questions == 0)
+                    unmark_parent(d.parent);
+            }
+        }
+        if (d.parent.questions)
+            unmark_parent(d);
+        d.parent._children = parent_childs;
+        d3.select(node).node().remove();
+        drawer.refresh();
+        pycmd("sub_answer_" + d.data.id);
     }
 }
 

@@ -7,4 +7,4 @@ graph_data.setData(json_data);
 drawer = chart_tree;
 json = graph_data.stratify();
 show_quiz_leaves.checked = true;
-refresh_view([237, 246, 231, 239, 238, 243, 248, 234, 244, 241, 242, 249, 250, ]);
+refresh_view([237, 246, 231, 239, 238, 243, ]);
